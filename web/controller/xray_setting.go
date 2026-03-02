@@ -17,6 +17,13 @@ type XraySettingController struct {
 	OutboundService    service.OutboundService
 	XrayService        service.XrayService
 	WarpService        service.WarpService
+	onMutation         func()
+}
+
+// SetOnMutation configures the callback invoked after Xray settings are saved.
+// Used by the sync subsystem to push the updated template to slave nodes.
+func (a *XraySettingController) SetOnMutation(fn func()) {
+	a.onMutation = fn
 }
 
 // NewXraySettingController creates a new XraySettingController and initializes its routes.
@@ -81,6 +88,9 @@ func (a *XraySettingController) updateSetting(c *gin.Context) {
 		outboundTestUrl = "https://www.google.com/generate_204"
 	}
 	_ = a.SettingService.SetXrayOutboundTestUrl(outboundTestUrl)
+	if a.onMutation != nil {
+		go a.onMutation()
+	}
 	jsonMsg(c, I18nWeb(c, "pages.settings.toasts.modifySettings"), nil)
 }
 

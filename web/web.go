@@ -104,6 +104,7 @@ type Server struct {
 	xrayService    service.XrayService
 	settingService service.SettingService
 	tgbotService   service.Tgbot
+	syncService    service.SyncService
 
 	wsHub *websocket.Hub
 
@@ -269,6 +270,17 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	s.index = controller.NewIndexController(g)
 	s.panel = controller.NewXUIController(g)
 	s.api = controller.NewAPIController(g)
+
+	// Wire up sync trigger: after any inbound/client mutation, push changes to slave nodes.
+	s.api.SetSyncTrigger(s.syncService.TriggerSync)
+	// Wire up sync trigger for settings changes (routing rules, Xray template, sub* settings).
+	s.panel.SetSyncTrigger(s.syncService.TriggerSync)
+
+	// Register public sync endpoints at the engine root (outside basePath, no session auth).
+	// These must be reachable by slave nodes regardless of the panel's base path setting.
+	syncCtrl := controller.NewSyncController()
+	engine.POST("/sync/push", syncCtrl.ReceivePush)
+	engine.POST("/sync/traffic", syncCtrl.ReceiveTraffic)
 
 	// Initialize WebSocket hub
 	s.wsHub = websocket.NewHub()

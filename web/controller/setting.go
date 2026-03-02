@@ -25,6 +25,13 @@ type SettingController struct {
 	settingService service.SettingService
 	userService    service.UserService
 	panelService   service.PanelService
+	onMutation     func()
+}
+
+// SetOnMutation configures the callback invoked after any settings mutation.
+// Used by the sync subsystem to push changes to slave nodes.
+func (a *SettingController) SetOnMutation(fn func()) {
+	a.onMutation = fn
 }
 
 // NewSettingController creates a new SettingController and initializes its routes.
@@ -75,6 +82,9 @@ func (a *SettingController) updateSetting(c *gin.Context) {
 		return
 	}
 	err = a.settingService.UpdateAllSetting(allSetting)
+	if err == nil && a.onMutation != nil {
+		go a.onMutation()
+	}
 	jsonMsg(c, I18nWeb(c, "pages.settings.toasts.modifySettings"), err)
 }
 

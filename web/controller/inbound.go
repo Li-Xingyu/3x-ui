@@ -27,6 +27,12 @@ func NewInboundController(g *gin.RouterGroup) *InboundController {
 	return a
 }
 
+// SetOnMutation configures the callback invoked after any inbound/client config mutation.
+// Used by the sync subsystem to push changes to slave nodes.
+func (a *InboundController) SetOnMutation(fn func()) {
+	a.inboundService.SetOnMutation(fn)
+}
+
 // initRouter initializes the routes for inbound-related operations.
 func (a *InboundController) initRouter(g *gin.RouterGroup) {
 

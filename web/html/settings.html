@@ -89,6 +89,13 @@
                     </template>
                     {{ template "settings/panel/subscription/json" . }}
                   </a-tab-pane>
+                  <a-tab-pane key="6" :style="{ paddingTop: '20px' }">
+                    <template #tab>
+                      <a-icon type="cluster"></a-icon>
+                      <span>Sync</span>
+                    </template>
+                    {{ template "settings/panel/sync" . }}
+                  </a-tab-pane>
                 </a-tabs>
               </a-col>
             </a-row>
@@ -205,6 +212,31 @@
         { label: 'Meta', value: 'geosite:meta' },
         { label: 'Google', value: 'geosite:google' },
       ],
+      // Sync tab state
+      syncSecret: '',
+      syncSecretLoading: false,
+      syncFullSyncLoading: false,
+      syncActiveKeys: ['1'],
+      syncNodes: [],
+      addNodeModal: {
+        visible: false,
+        loading: false,
+        name: '',
+        url: '',
+        secret: '',
+        remark: '',
+        enable: true,
+      },
+      editNodeModal: {
+        visible: false,
+        loading: false,
+        id: null,
+        name: '',
+        url: '',
+        secret: '',
+        remark: '',
+        enable: true,
+      },
       get remarkModel() {
         rm = this.allSetting.remarkModel;
         return rm.length > 1 ? rm.substring(1).split('') : [];
@@ -287,6 +319,112 @@
           this.inboundOptions = [];
         }
       },
+      // --- Sync methods ---
+      async loadSyncSecret() {
+        const msg = await HttpUtil.get("/panel/api/sync/secret");
+        if (msg && msg.success) this.syncSecret = msg.obj.secret;
+      },
+      async loadSyncNodes() {
+        const msg = await HttpUtil.get("/panel/api/sync/nodes");
+        if (msg && msg.success) this.syncNodes = msg.obj || [];
+      },
+      copySyncSecret() {
+        if (this.syncSecret) navigator.clipboard.writeText(this.syncSecret);
+      },
+      async regenerateSyncSecret() {
+        this.$confirm({
+          title: 'Regenerate Sync Secret?',
+          content: 'All slave nodes will need to be updated with the new secret. Continue?',
+          onOk: async () => {
+            this.syncSecretLoading = true;
+            const msg = await HttpUtil.post("/panel/api/sync/secret/regenerate");
+            this.syncSecretLoading = false;
+            if (msg.success) this.syncSecret = msg.obj.secret;
+          },
+        });
+      },
+      showAddNodeModal() {
+        Object.assign(this.addNodeModal, { visible: true, loading: false, name: '', url: '', secret: '', remark: '', enable: true });
+      },
+      async submitAddNode() {
+        if (!this.addNodeModal.name || !this.addNodeModal.url || !this.addNodeModal.secret) {
+          this.$message.error('Name, URL and Secret are required');
+          return;
+        }
+        this.addNodeModal.loading = true;
+        const msg = await HttpUtil.post("/panel/api/sync/nodes/add", {
+          name: this.addNodeModal.name,
+          url: this.addNodeModal.url.replace(/\/$/, ''),
+          secret: this.addNodeModal.secret,
+          remark: this.addNodeModal.remark,
+          enable: this.addNodeModal.enable,
+        });
+        this.addNodeModal.loading = false;
+        if (msg.success) {
+          this.addNodeModal.visible = false;
+          await this.loadSyncNodes();
+        }
+      },
+      async deleteNode(node) {
+        const msg = await HttpUtil.post(`/panel/api/sync/nodes/del/${node.id}`);
+        if (msg.success) await this.loadSyncNodes();
+      },
+      async toggleNode(node) {
+        const updated = { ...node, enable: !node.enable };
+        const msg = await HttpUtil.post(`/panel/api/sync/nodes/update/${node.id}`, updated);
+        if (msg.success) await this.loadSyncNodes();
+      },
+      showEditNodeModal(node) {
+        Object.assign(this.editNodeModal, {
+          visible: true, loading: false,
+          id: node.id,
+          name: node.name,
+          url: node.url,
+          secret: node.secret,
+          remark: node.remark,
+          enable: node.enable,
+        });
+      },
+      async submitEditNode() {
+        if (!this.editNodeModal.name || !this.editNodeModal.url || !this.editNodeModal.secret) {
+          this.$message.error('Name, URL and Secret are required');
+          return;
+        }
+        this.editNodeModal.loading = true;
+        const msg = await HttpUtil.post(`/panel/api/sync/nodes/update/${this.editNodeModal.id}`, {
+          name: this.editNodeModal.name,
+          url: this.editNodeModal.url.replace(/\/$/, ''),
+          secret: this.editNodeModal.secret,
+          remark: this.editNodeModal.remark,
+          enable: this.editNodeModal.enable,
+        });
+        this.editNodeModal.loading = false;
+        if (msg.success) {
+          this.editNodeModal.visible = false;
+          await this.loadSyncNodes();
+        }
+      },
+      async testNode(node) {
+        this.$set(node, '_testing', true);
+        const msg = await HttpUtil.post(`/panel/api/sync/nodes/test/${node.id}`);
+        this.$set(node, '_testing', false);
+        if (msg.success) {
+          this.$message.success(`Connected to ${node.name}`);
+        } else {
+          this.$message.error(`Failed: ${msg.msg || 'unreachable'}`);
+        }
+      },
+      async fullSync() {
+        this.syncFullSyncLoading = true;
+        const msg = await HttpUtil.post("/panel/api/sync/fullsync");
+        this.syncFullSyncLoading = false;
+        if (msg.success) {
+          this.$message.success('Full sync triggered');
+        } else {
+          this.$message.error(`Full sync failed: ${msg.msg}`);
+        }
+      },
+      // --- End sync methods ---
       async updateAllSetting() {
         this.loading(true);
         const msg = await HttpUtil.post("/panel/setting/update", this.allSetting);
@@ -628,6 +766,8 @@
       this.entryIsIP = this._isIp(this.entryHost);
       await this.getAllSetting();
       await this.loadInboundTags();
+      await this.loadSyncSecret();
+      await this.loadSyncNodes();
       while (true) {
         await PromiseUtil.sleep(1000);
         this.saveBtnDisable = this.oldAllSetting.equals(this.allSetting);

@@ -77,6 +77,10 @@ class AllSetting {
         this.ldapDefaultExpiryDays = 0;
         this.ldapDefaultLimitIP = 0;
 
+        // Sync settings
+        this.syncEnable = false;
+        this.syncMasterURL = '';
+
         if (data == null) {
             return
         }

@@ -33,6 +33,13 @@ func (a *XUIController) initRouter(g *gin.RouterGroup) {
 	a.xraySettingController = NewXraySettingController(g)
 }
 
+// SetSyncTrigger configures the function called after any settings mutation
+// (general settings or Xray template) to push changes to slave nodes.
+func (a *XUIController) SetSyncTrigger(fn func()) {
+	a.settingController.SetOnMutation(fn)
+	a.xraySettingController.SetOnMutation(fn)
+}
+
 // index renders the main panel index page.
 func (a *XUIController) index(c *gin.Context) {
 	html(c, "index.html", "pages.index.title", nil)

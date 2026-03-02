@@ -1,0 +1,134 @@
+{{define "settings/panel/sync"}}
+<a-collapse v-model="syncActiveKeys">
+    <!-- General sync settings -->
+    <a-collapse-panel key="1" header='{{ i18n "pages.xray.generalConfigs"}}'>
+        <a-setting-list-item paddings="small">
+            <template #title>Enable Sync</template>
+            <template #description>Allow this node to participate in configuration synchronization (as master or slave).</template>
+            <template #control>
+                <a-switch v-model="allSetting.syncEnable"></a-switch>
+            </template>
+        </a-setting-list-item>
+        <a-setting-list-item paddings="small" v-if="allSetting.syncEnable">
+            <template #title>This Node's Secret</template>
+            <template #description>
+                This node's identity secret. When acting as a <b>slave</b>, copy this value and paste it into the
+                master's "Add Node" form (Secret field). The master uses it to authenticate sync pushes to this node.
+            </template>
+            <template #control>
+                <a-input-group compact :style="{ display: 'flex' }">
+                    <a-input read-only v-model="syncSecret" :style="{ flex: 1, fontFamily: 'monospace' }"></a-input>
+                    <a-button icon="copy" @click="copySyncSecret">Copy</a-button>
+                    <a-button icon="reload" @click="regenerateSyncSecret" :loading="syncSecretLoading">Regenerate</a-button>
+                </a-input-group>
+            </template>
+        </a-setting-list-item>
+        <a-setting-list-item paddings="small" v-if="allSetting.syncEnable">
+            <template #title>Master Public URL</template>
+            <template #description>
+                (Master only) This node's publicly reachable base URL (e.g. <code>https://master.example.com</code>).
+                When set, slaves automatically configure their traffic reporting URI on each sync push —
+                no manual <code>externalTrafficInformURI</code> setup required.
+            </template>
+            <template #control>
+                <a-input v-model="allSetting.syncMasterURL" placeholder="https://master.example.com" allow-clear></a-input>
+            </template>
+        </a-setting-list-item>
+    </a-collapse-panel>
+
+    <!-- Slave nodes management (master only) -->
+    <a-collapse-panel key="2" header="Slave Nodes" v-if="allSetting.syncEnable">
+        <div :style="{ marginBottom: '12px' }">
+            <a-button type="primary" icon="plus" @click="showAddNodeModal">Add Node</a-button>
+            <a-button icon="sync" @click="fullSync" :loading="syncFullSyncLoading" :style="{ marginLeft: '8px' }">Full Sync Now</a-button>
+        </div>
+        <a-table :data-source="syncNodes" :row-key="r => r.id" size="small"
+            :locale="{ emptyText: 'No slave nodes configured' }">
+            <a-table-column title="Name" data-index="name"></a-table-column>
+            <a-table-column title="URL" data-index="url"></a-table-column>
+            <a-table-column title="Secret">
+                <template slot-scope="text, record">
+                    <span :style="{ fontFamily: 'monospace', color: '#888' }">
+                        [[ record.secret ? record.secret.substring(0, 8) + '••••••••' : '—' ]]
+                    </span>
+                </template>
+            </a-table-column>
+            <a-table-column title="Remark" data-index="remark"></a-table-column>
+            <a-table-column title="Enable">
+                <template slot-scope="text, record">
+                    <a-switch :checked="record.enable" size="small" @change="toggleNode(record)"></a-switch>
+                </template>
+            </a-table-column>
+            <a-table-column title="Actions" :width="180">
+                <template slot-scope="text, record">
+                    <a-space>
+                        <a-button size="small" icon="api" @click="testNode(record)" :loading="record._testing">Test</a-button>
+                        <a-button size="small" icon="edit" @click="showEditNodeModal(record)"></a-button>
+                        <a-button size="small" type="danger" icon="delete" @click="deleteNode(record)"></a-button>
+                    </a-space>
+                </template>
+            </a-table-column>
+        </a-table>
+
+        <!-- Add node modal -->
+        <a-modal v-model="addNodeModal.visible" title="Add Slave Node" @ok="submitAddNode"
+            :confirm-loading="addNodeModal.loading" :class="themeSwitcher.currentTheme">
+            <a-form layout="vertical">
+                <a-form-item label="Name" required>
+                    <a-input v-model="addNodeModal.name" placeholder="e.g. SG-01"></a-input>
+                </a-form-item>
+                <a-form-item label="Base URL" required>
+                    <a-input v-model="addNodeModal.url" placeholder="https://node1.example.com"></a-input>
+                </a-form-item>
+                <a-form-item label="Slave Secret" required>
+                    <a-input v-model="addNodeModal.secret"
+                        placeholder="Paste the slave node's 'This Node's Secret' here"></a-input>
+                </a-form-item>
+                <a-form-item label="Remark">
+                    <a-input v-model="addNodeModal.remark" placeholder="Optional note"></a-input>
+                </a-form-item>
+                <a-form-item label="Enable">
+                    <a-switch v-model="addNodeModal.enable"></a-switch>
+                </a-form-item>
+            </a-form>
+        </a-modal>
+
+        <!-- Edit node modal -->
+        <a-modal v-model="editNodeModal.visible" title="Edit Slave Node" @ok="submitEditNode"
+            :confirm-loading="editNodeModal.loading" :class="themeSwitcher.currentTheme">
+            <a-form layout="vertical">
+                <a-form-item label="Name" required>
+                    <a-input v-model="editNodeModal.name" placeholder="e.g. SG-01"></a-input>
+                </a-form-item>
+                <a-form-item label="Base URL" required>
+                    <a-input v-model="editNodeModal.url" placeholder="https://node1.example.com"></a-input>
+                </a-form-item>
+                <a-form-item label="Slave Secret" required>
+                    <a-input v-model="editNodeModal.secret"
+                        placeholder="Slave node's secret"></a-input>
+                </a-form-item>
+                <a-form-item label="Remark">
+                    <a-input v-model="editNodeModal.remark" placeholder="Optional note"></a-input>
+                </a-form-item>
+                <a-form-item label="Enable">
+                    <a-switch v-model="editNodeModal.enable"></a-switch>
+                </a-form-item>
+            </a-form>
+        </a-modal>
+    </a-collapse-panel>
+
+    <!-- Slave configuration hint -->
+    <a-collapse-panel key="3" header="Slave Node Setup Guide" v-if="allSetting.syncEnable">
+        <a-alert type="info" show-icon>
+            <template slot="message">How to configure this node as a slave</template>
+            <template slot="description">
+                <ol :style="{ paddingLeft: '20px', marginTop: '8px' }">
+                    <li>On <b>this node</b>: enable "Enable Sync" above → copy <b>This Node's Secret</b>.</li>
+                    <li>On the <b>master node</b>: Settings → Sync → Add Node → fill in this node's URL and paste the secret.</li>
+                    <li>On the <b>master node</b>: set <b>Master Public URL</b> to the master's reachable address and save. Traffic reporting will be auto-configured on each slave during the next sync push.</li>
+                </ol>
+            </template>
+        </a-alert>
+    </a-collapse-panel>
+</a-collapse>
+{{end}}

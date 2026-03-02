@@ -23,7 +23,13 @@ import (
 // It handles CRUD operations for inbounds, client management, traffic monitoring,
 // and integration with the Xray API for real-time updates.
 type InboundService struct {
-	xrayApi xray.XrayAPI
+	xrayApi    xray.XrayAPI
+	onMutation func() // called asynchronously after any config mutation; set externally to avoid circular imports
+}
+
+// SetOnMutation sets the callback invoked after any inbound/client config mutation.
+func (s *InboundService) SetOnMutation(fn func()) {
+	s.onMutation = fn
 }
 
 // GetInbounds retrieves all inbounds for a specific user.
@@ -316,6 +322,9 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 		s.xrayApi.Close()
 	}
 
+	if err == nil && s.onMutation != nil {
+		go s.onMutation()
+	}
 	return inbound, needRestart, err
 }
 
@@ -362,7 +371,11 @@ func (s *InboundService) DelInbound(id int) (bool, error) {
 		}
 	}
 
-	return needRestart, db.Delete(model.Inbound{}, id).Error
+	err = db.Delete(model.Inbound{}, id).Error
+	if err == nil && s.onMutation != nil {
+		go s.onMutation()
+	}
+	return needRestart, err
 }
 
 func (s *InboundService) GetInbound(id int) (*model.Inbound, error) {
@@ -510,7 +523,11 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 	}
 	s.xrayApi.Close()
 
-	return inbound, needRestart, tx.Save(oldInbound).Error
+	err = tx.Save(oldInbound).Error
+	if err == nil && s.onMutation != nil {
+		go s.onMutation()
+	}
+	return inbound, needRestart, err
 }
 
 func (s *InboundService) updateClientTraffics(tx *gorm.DB, oldInbound *model.Inbound, newInbound *model.Inbound) error {
@@ -673,7 +690,11 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 	}
 	s.xrayApi.Close()
 
-	return needRestart, tx.Save(oldInbound).Error
+	err = tx.Save(oldInbound).Error
+	if err == nil && s.onMutation != nil {
+		go s.onMutation()
+	}
+	return needRestart, err
 }
 
 func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool, error) {
@@ -761,7 +782,11 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 			s.xrayApi.Close()
 		}
 	}
-	return needRestart, db.Save(oldInbound).Error
+	err = db.Save(oldInbound).Error
+	if err == nil && s.onMutation != nil {
+		go s.onMutation()
+	}
+	return needRestart, err
 }
 
 func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId string) (bool, error) {
@@ -936,7 +961,11 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 		logger.Debug("Client old email not found")
 		needRestart = true
 	}
-	return needRestart, tx.Save(oldInbound).Error
+	err = tx.Save(oldInbound).Error
+	if err == nil && s.onMutation != nil {
+		go s.onMutation()
+	}
+	return needRestart, err
 }
 
 func (s *InboundService) AddTraffic(inboundTraffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (error, bool) {

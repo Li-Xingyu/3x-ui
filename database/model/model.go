@@ -97,6 +97,16 @@ func (i *Inbound) GenXrayInboundConfig() *xray.InboundConfig {
 	}
 }
 
+// SyncNode stores information about peer nodes for configuration synchronization.
+type SyncNode struct {
+	Id     int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	Name   string `json:"name" form:"name"`
+	Url    string `json:"url" form:"url"`       // Base URL, e.g. https://node1.example.com
+	Secret string `json:"secret" form:"secret"` // The slave node's own syncSecret (used by master to authenticate)
+	Enable bool   `json:"enable" form:"enable"` // Whether to sync to this node
+	Remark string `json:"remark" form:"remark"`
+}
+
 // Setting stores key-value configuration settings for the 3x-ui panel.
 type Setting struct {
 	Id    int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`

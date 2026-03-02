@@ -14,6 +14,7 @@ type APIController struct {
 	BaseController
 	inboundController *InboundController
 	serverController  *ServerController
+	syncController    *SyncController
 	Tgbot             service.Tgbot
 }
 
@@ -48,8 +49,17 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	server := api.Group("/server")
 	a.serverController = NewServerController(server)
 
+	// Sync node management API
+	a.syncController = NewSyncController()
+	a.syncController.InitAdminRouter(api)
+
 	// Extra routes
 	api.GET("/backuptotgbot", a.BackuptoTgbot)
+}
+
+// SetSyncTrigger configures the function called after every inbound/client mutation to push sync to slaves.
+func (a *APIController) SetSyncTrigger(fn func()) {
+	a.inboundController.SetOnMutation(fn)
 }
 
 // BackuptoTgbot sends a backup of the panel data to Telegram bot admins.

@@ -103,7 +103,9 @@ type AllSetting struct {
 	LdapDefaultTotalGB    int    `json:"ldapDefaultTotalGB" form:"ldapDefaultTotalGB"`
 	LdapDefaultExpiryDays int    `json:"ldapDefaultExpiryDays" form:"ldapDefaultExpiryDays"`
 	LdapDefaultLimitIP    int    `json:"ldapDefaultLimitIP" form:"ldapDefaultLimitIP"`
-	// JSON subscription routing rules
+	// Sync settings
+	SyncEnable    bool   `json:"syncEnable" form:"syncEnable"`
+	SyncMasterURL string `json:"syncMasterURL" form:"syncMasterURL"` // Master's public base URL (e.g. https://master.example.com)
 }
 
 // CheckValid validates all settings in the AllSetting struct, checking IP addresses, ports, SSL certificates, and other configuration values.

@@ -102,6 +102,11 @@ var defaultValueMap = map[string]string{
 	"ldapDefaultTotalGB":    "0",
 	"ldapDefaultExpiryDays": "0",
 	"ldapDefaultLimitIP":    "0",
+
+	// Sync settings
+	"syncEnable":    "false",
+	"syncSecret":    random.Seq(32),
+	"syncMasterURL": "",
 }
 
 // SettingService provides business logic for application settings management.
@@ -374,6 +379,41 @@ func (s *SettingService) SetTwoFactorToken(value string) error {
 	return s.setString("twoFactorToken", value)
 }
 
+func (s *SettingService) GetSyncEnable() (bool, error) {
+	return s.getBool("syncEnable")
+}
+
+func (s *SettingService) SetSyncEnable(value bool) error {
+	return s.setBool("syncEnable", value)
+}
+
+func (s *SettingService) GetSyncSecret() (string, error) {
+	secret, err := s.getString("syncSecret")
+	if err != nil {
+		return "", err
+	}
+	// If the value is still the in-memory default (never persisted), save it now so
+	// it remains stable across restarts — same pattern as GetSecret().
+	if secret == defaultValueMap["syncSecret"] {
+		if saveErr := s.saveSetting("syncSecret", secret); saveErr != nil {
+			return "", saveErr
+		}
+	}
+	return secret, nil
+}
+
+func (s *SettingService) SetSyncSecret(value string) error {
+	return s.setString("syncSecret", value)
+}
+
+func (s *SettingService) GetSyncMasterURL() (string, error) {
+	return s.getString("syncMasterURL")
+}
+
+func (s *SettingService) SetSyncMasterURL(value string) error {
+	return s.setString("syncMasterURL", value)
+}
+
 func (s *SettingService) GetPort() (int, error) {
 	return s.getInt("webPort")
 }
@@ -569,6 +609,42 @@ func (s *SettingService) GetSubJsonMux() (string, error) {
 
 func (s *SettingService) GetSubJsonRules() (string, error) {
 	return s.getString("subJsonRules")
+}
+
+func (s *SettingService) SetXrayConfigTemplate(v string) error {
+	return s.setString("xrayTemplateConfig", v)
+}
+
+func (s *SettingService) SetSubPath(v string) error {
+	return s.setString("subPath", v)
+}
+
+func (s *SettingService) SetSubTitle(v string) error {
+	return s.setString("subTitle", v)
+}
+
+func (s *SettingService) SetSubEnableRouting(v bool) error {
+	return s.setBool("subEnableRouting", v)
+}
+
+func (s *SettingService) SetSubRoutingRules(v string) error {
+	return s.setString("subRoutingRules", v)
+}
+
+func (s *SettingService) SetSubJsonFragment(v string) error {
+	return s.setString("subJsonFragment", v)
+}
+
+func (s *SettingService) SetSubJsonNoises(v string) error {
+	return s.setString("subJsonNoises", v)
+}
+
+func (s *SettingService) SetSubJsonMux(v string) error {
+	return s.setString("subJsonMux", v)
+}
+
+func (s *SettingService) SetSubJsonRules(v string) error {
+	return s.setString("subJsonRules", v)
 }
 
 func (s *SettingService) GetDatepicker() (string, error) {

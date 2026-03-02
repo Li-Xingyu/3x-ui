@@ -7,13 +7,13 @@
   </picture>
 </p>
 
-[![Release](https://img.shields.io/github/v/release/mhsanaei/3x-ui.svg)](https://github.com/MHSanaei/3x-ui/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/mhsanaei/3x-ui/release.yml.svg)](https://github.com/MHSanaei/3x-ui/actions)
-[![GO Version](https://img.shields.io/github/go-mod/go-version/mhsanaei/3x-ui.svg)](#)
-[![Downloads](https://img.shields.io/github/downloads/mhsanaei/3x-ui/total.svg)](https://github.com/MHSanaei/3x-ui/releases/latest)
+[![Release](https://img.shields.io/github/v/release/Li-Xingyu/3x-ui.svg)](https://github.com/Li-Xingyu/3x-ui/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/Li-Xingyu/3x-ui/release.yml.svg)](https://github.com/Li-Xingyu/3x-ui/actions)
+[![GO Version](https://img.shields.io/github/go-mod/go-version/Li-Xingyu/3x-ui.svg)](#)
+[![Downloads](https://img.shields.io/github/downloads/Li-Xingyu/3x-ui/total.svg)](https://github.com/Li-Xingyu/3x-ui/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)
-[![Go Reference](https://pkg.go.dev/badge/github.com/mhsanaei/3x-ui/v2.svg)](https://pkg.go.dev/github.com/mhsanaei/3x-ui/v2)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mhsanaei/3x-ui/v2)](https://goreportcard.com/report/github.com/mhsanaei/3x-ui/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/Li-Xingyu/3x-ui/v2.svg)](https://pkg.go.dev/github.com/Li-Xingyu/3x-ui/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Li-Xingyu/3x-ui/v2)](https://goreportcard.com/report/github.com/Li-Xingyu/3x-ui/v2)
 
 **3X-UI** — panel de control avanzado basado en web de código abierto diseñado para gestionar el servidor Xray-core. Ofrece una interfaz fácil de usar para configurar y monitorear varios protocolos VPN y proxy.
 
@@ -25,10 +25,10 @@ Como una versión mejorada del proyecto X-UI original, 3X-UI proporciona mayor e
 ## Inicio Rápido
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/Li-Xingyu/3x-ui/main/install.sh)
 ```
 
-Para documentación completa, visita la [Wiki del proyecto](https://github.com/MHSanaei/3x-ui/wiki).
+Para documentación completa, visita la [Wiki del proyecto](https://github.com/Li-Xingyu/3x-ui/wiki).
 
 ## Un Agradecimiento Especial a
 
@@ -54,4 +54,4 @@ Para documentación completa, visita la [Wiki del proyecto](https://github.com/M
 
 ## Estrellas a lo Largo del Tiempo
 
-[![Stargazers over time](https://starchart.cc/MHSanaei/3x-ui.svg?variant=adaptive)](https://starchart.cc/MHSanaei/3x-ui) 
+[![Stargazers over time](https://starchart.cc/Li-Xingyu/3x-ui.svg?variant=adaptive)](https://starchart.cc/Li-Xingyu/3x-ui) 

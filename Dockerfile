@@ -13,6 +13,8 @@ RUN apk --no-cache --update add \
 
 COPY . .
 
+RUN find . -name "*.sh" -exec sed -i 's/\r$//' {} + && chmod +x *.sh
+
 ENV CGO_ENABLED=1
 ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
 RUN go build -ldflags "-w -s" -o build/x-ui main.go
